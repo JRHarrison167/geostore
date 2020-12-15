@@ -28,7 +28,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.GrantedAuthorityImpl;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
 import org.springframework.security.ldap.authentication.LdapAuthenticator;
@@ -108,7 +108,7 @@ private final static Logger LOGGER = Logger.getLogger(UserLdapAuthenticationProv
                 throw new DisabledException(USER_NOT_FOUND_MSG);
             }
 
-            authorities = ldapUser.getAuthorities();
+            authorities = (Collection<GrantedAuthority>) ldapUser.getAuthorities();
 
             String pw = (String) authentication.getCredentials();
             String us = ldapUser.getUsername();
@@ -189,14 +189,14 @@ private final static Logger LOGGER = Logger.getLogger(UserLdapAuthenticationProv
      */
     protected Authentication prepareAuthentication(String pw, User user, Role role) {
         List<GrantedAuthority> grantedAuthorities = new ArrayList<GrantedAuthority>();
-        grantedAuthorities.add(new GrantedAuthorityImpl("ROLE_" + role));
+        grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_" + role));
         Authentication a = new UsernamePasswordAuthenticationToken(user, pw, grantedAuthorities);
         // a.setAuthenticated(true);
         return a;
     }
 
     /**
-     * @param role2
+     * @param userRole
      * @param authorities
      * @param groups
      * @return

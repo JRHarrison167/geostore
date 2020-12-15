@@ -14,6 +14,7 @@ catalog.xml
 *iml
 .idea
 
+m2
 target
 src/core/model/target
 src/core/persistence/target
