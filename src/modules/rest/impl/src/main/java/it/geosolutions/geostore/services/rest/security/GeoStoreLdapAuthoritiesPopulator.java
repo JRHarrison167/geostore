@@ -40,7 +40,7 @@ import org.springframework.ldap.core.ContextSource;
 import org.springframework.ldap.core.DirContextOperations;
 import org.springframework.ldap.core.support.AbstractContextMapper;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.GrantedAuthorityImpl;
 import org.springframework.security.ldap.SpringSecurityLdapTemplate;
 import org.springframework.security.ldap.userdetails.DefaultLdapAuthoritiesPopulator;
 import org.springframework.util.Assert;
@@ -253,8 +253,8 @@ public class GeoStoreLdapAuthoritiesPopulator extends
         }
 
         String prefix = (authorityPrefix != null && !authority.startsWith(authorityPrefix) ? authorityPrefix : "");
-        
-        SimpleGrantedAuthority role = new SimpleGrantedAuthority(prefix + authority);
+
+        GrantedAuthorityImpl role = new GrantedAuthorityImpl(prefix + authority);
         if (!authorities.contains(role)) {
             authorities.add(role);
             return true;

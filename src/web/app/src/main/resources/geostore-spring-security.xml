@@ -41,6 +41,8 @@
 	
 	<bean class="it.geosolutions.geostore.services.rest.security.UserAttributeTokenAuthenticationFilter"
         id="authenticationTokenProcessingFilter">
+		<property name="tokenHeader" value="Authorization"/>
+		<property name="tokenPrefix" value="Bearer "/>
 	</bean>
 	
 	<bean class="it.geosolutions.geostore.services.rest.security.SessionTokenAuthenticationFilter"

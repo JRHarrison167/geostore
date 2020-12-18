@@ -35,7 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.GrantedAuthorityImpl;
 
 public class UserLdapAuthenticationProviderTest {
     private static final String TEST_GROUP = "testgroup";
@@ -50,7 +50,7 @@ public class UserLdapAuthenticationProviderTest {
 
             @Override
             public Set<GrantedAuthority> getAllGroups() {
-                return Collections.singleton((GrantedAuthority)new SimpleGrantedAuthority(TEST_GROUP));
+                return Collections.singleton((GrantedAuthority)new GrantedAuthorityImpl(TEST_GROUP));
             }
             
         });
