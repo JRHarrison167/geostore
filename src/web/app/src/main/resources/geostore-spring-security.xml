@@ -39,10 +39,17 @@
 		class="it.geosolutions.geostore.services.rest.security.UserServiceAuthenticationProvider">
 	</bean>
 	
-	<bean class="it.geosolutions.geostore.services.rest.security.UserAttributeTokenAuthenticationFilter"
+<!--	<bean class="it.geosolutions.geostore.services.rest.security.UserAttributeTokenAuthenticationFilter"-->
+<!--        id="authenticationTokenProcessingFilter">-->
+<!--		<property name="tokenHeader" value="Authorization"/>-->
+<!--		<property name="tokenPrefix" value="Bearer "/>-->
+<!--	</bean>	-->
+
+	<bean class="it.geosolutions.geostore.services.rest.security.KeycloakTokenAuthenticationFilter"
         id="authenticationTokenProcessingFilter">
 		<property name="tokenHeader" value="Authorization"/>
 		<property name="tokenPrefix" value="Bearer "/>
+		<constructor-arg value="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0KJU58jnA5g20/763vaXMsIhlUNvhr2muPtuCBeO7JiUsQwcItJ5uw4qbW3UOdMjgMH6FmtIN+KxX/+XYwTEHWyLu+7JM8q3u6tddMeDgILRd1MRuifCZCmHhU/vXfwTBAJtkwRvcVljFEZrvLlPCFzp/R0cE8WdKkcawbc56gx1k2LDjSSgJjgaoUkJlZeqcFuhf8QwQNb8nNWs2kbYXjnt2nf7sc4NLSlwpgLXuK6sMVD886lU+lrDAhsXFTMm955hRk1rVjwXL/jdfujSnfyBWFQc3hmKvE9/ESHSBxPIy7MMZG9/+1WMmzD4VUvhDOWV1D8hZqs1klomjrloWwIDAQAB" />
 	</bean>
 	
 	<bean class="it.geosolutions.geostore.services.rest.security.SessionTokenAuthenticationFilter"

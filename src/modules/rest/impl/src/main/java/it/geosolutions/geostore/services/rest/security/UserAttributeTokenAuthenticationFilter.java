@@ -60,7 +60,6 @@ public class UserAttributeTokenAuthenticationFilter extends TokenAuthenticationF
         attribute.setValue(token);
         // looks for user(s) having the specified attribute with the given
         // token value
-        LOGGER.info(token);
         Collection<User> users = userService.getByAttribute(attribute);
         // the token is considered valid if only 1 user matches
         if(users.size() == 1) {
