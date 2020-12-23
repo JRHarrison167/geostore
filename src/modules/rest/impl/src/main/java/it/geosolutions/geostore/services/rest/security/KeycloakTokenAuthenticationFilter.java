@@ -30,6 +30,7 @@ package it.geosolutions.geostore.services.rest.security;
 import io.jsonwebtoken.*;
 import it.geosolutions.geostore.core.model.User;
 import it.geosolutions.geostore.core.model.UserAttribute;
+import it.geosolutions.geostore.core.model.UserGroup;
 import it.geosolutions.geostore.core.model.enums.Role;
 import it.geosolutions.geostore.services.exception.NotFoundServiceEx;
 import org.apache.log4j.Logger;
@@ -98,6 +99,7 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
         String keycloakUUID;
         String username;
         List<String> roles;
+        List<String> groupNames;
         try {
             issuer = (String) claims.get("iss");
             keycloakUUID = (String) claims.get("sub");
@@ -105,6 +107,7 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
             Map<String, Object> resourceAccess = (Map<String, Object>) claims.get("resource_access");
             Map<String, List<String>> geostoreClient = (Map<String, List<String>>) resourceAccess.get("geostore-client");
             roles = geostoreClient.get("roles");
+            groupNames = (List<String>) claims.get("groups");
         } catch (NullPointerException exception) {
             LOGGER.error("Unable to retrieve required user details from token");
             return null;
@@ -161,11 +164,19 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
             attribute.setValue(keycloakUUID);
             attributes.add(attribute);
 
+            Set<UserGroup> groups = new HashSet<>();
+            for (String name : groupNames) {
+                UserGroup group = new UserGroup();
+                group.setGroupName(name);
+                groups.add(group);
+            }
+
             User user = new User();
             user.setName(namePrefix + username);
             user.setRole(role);
             user.setEnabled(true);
             user.setAttribute(attributes);
+            user.setGroups(groups);
 
             Set<GrantedAuthority> roleSet = new HashSet<>();
             roleSet.add(new GrantedAuthorityImpl(rolePrefix + role.toString()));
