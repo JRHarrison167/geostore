@@ -32,8 +32,10 @@ import it.geosolutions.geostore.core.model.User;
 import it.geosolutions.geostore.core.model.UserAttribute;
 import it.geosolutions.geostore.core.model.UserGroup;
 import it.geosolutions.geostore.core.model.enums.Role;
+import it.geosolutions.geostore.services.UserGroupService;
 import it.geosolutions.geostore.services.exception.NotFoundServiceEx;
 import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -48,6 +50,9 @@ import java.util.*;
 public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter {
 
     private static final Logger LOGGER = Logger.getLogger(KeycloakTokenAuthenticationFilter.class);
+
+    @Autowired
+    protected UserGroupService userGroupService;
 
     private static final String rolePrefix = "ROLE_";
 
@@ -138,7 +143,7 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
         for (String retrievedRole : roles) {
             String roleName = retrievedRole.toUpperCase();
             if (roleName.startsWith(rolePrefix)) {
-                roleName = roleName.substring(5);
+                roleName = roleName.substring(rolePrefix.length());
             }
 
             if (roleName.equals(Role.ADMIN.toString())) {
@@ -168,6 +173,7 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
             for (String name : groupNames) {
                 UserGroup group = new UserGroup();
                 group.setGroupName(name);
+                userGroupService.insert(group);
                 groups.add(group);
             }
 
@@ -184,6 +190,7 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
             return new UsernamePasswordAuthenticationToken(user, "", roleSet);
         } catch (Exception exception) {
             LOGGER.error("Unable to create user in the database");
+            LOGGER.error(exception.getMessage());
             return null;
         }
     }
