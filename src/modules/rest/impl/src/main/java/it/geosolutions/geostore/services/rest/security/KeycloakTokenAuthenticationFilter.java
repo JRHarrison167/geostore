@@ -33,6 +33,7 @@ import it.geosolutions.geostore.core.model.UserAttribute;
 import it.geosolutions.geostore.core.model.UserGroup;
 import it.geosolutions.geostore.core.model.enums.Role;
 import it.geosolutions.geostore.services.UserGroupService;
+import it.geosolutions.geostore.services.exception.BadRequestServiceEx;
 import it.geosolutions.geostore.services.exception.NotFoundServiceEx;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,60 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
         this.publicKey = keyFactory.generatePublic(spec);
     }
 
+    /**
+     * Determine the user's role (admin, user, or guest) from a given list of role names.
+     * If no role matches admin, user, or guest, then returns null.
+     *
+     * @param roles A List of String role names
+     * @return A Role object or null
+     */
+    private Role getRole(List<String> roles) {
+        Role role = null;
+        for (String retrievedRole : roles) {
+            String roleName = retrievedRole.toUpperCase();
+            if (roleName.startsWith(rolePrefix)) {
+                roleName = roleName.substring(rolePrefix.length());
+            }
+
+            if (roleName.equals(Role.ADMIN.toString())) {
+                role = Role.ADMIN;
+                break;  // Admin is the highest authority, no need to continue checking
+            }
+
+            if (roleName.equals(Role.USER.toString())) {
+                role = Role.USER;
+            } else if (roleName.equals(Role.GUEST.toString()) && role != Role.USER) {
+                role = Role.GUEST;
+            }
+        }
+        return role;
+    }
+
+    /**
+     * For a given list of group names, retrieve the Group or create a new one.
+     * If an error occurs when trying to save a new Group, it is skipped.
+     *
+     * @param groupNames A List of group names to get or create groups with
+     * @return A Set of UserGroup objects
+     */
+    private Set<UserGroup> getOrCreateGroups(List<String> groupNames) {
+        Set<UserGroup> groups = new HashSet<>();
+        for (String name : groupNames) {
+            try {
+                UserGroup group = userGroupService.get(name);
+                if (group == null) {
+                    group = new UserGroup();
+                    group.setGroupName(name);
+                    userGroupService.insert(group);
+                }
+                groups.add(group);
+            } catch (BadRequestServiceEx ex) {
+                LOGGER.error(ex.getMessage());
+            }
+        }
+        return groups;
+    }
+
     @Override
     protected Authentication checkToken(String token) {
         try {
@@ -118,6 +173,14 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
             return null;
         }
 
+        Role role = getRole(roles);
+        if (role == null) {
+            LOGGER.error("No role found for the given user's token");
+            return null;
+        }
+
+        Set<UserGroup> groups = getOrCreateGroups(groupNames);
+
         // Assumes issuer is of the format: {base url}/auth/realms/{realm name}
         List<String> address = Arrays.asList(issuer.split("/"));
         String realm = address.get(address.size() - 1);
@@ -130,6 +193,9 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
             // If retrieved user was created via Keycloak and UUID matches token, authenticate to that account
             for (UserAttribute attribute : userAttributes) {
                 if (attribute.getName().equals(attributeName) && attribute.getValue().equals(keycloakUUID)) {
+                    user.setGroups(groups);
+                    user.setRole(role);
+                    userService.update(user);
                     return createAuthenticationForUser(user);
                 }
             }
@@ -137,28 +203,8 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
         } catch (NotFoundServiceEx exception) {
             // No user found for given name
             LOGGER.info(exception.getMessage() + ". Creating new Keycloak user.");
-        }
-
-        Role role = null;
-        for (String retrievedRole : roles) {
-            String roleName = retrievedRole.toUpperCase();
-            if (roleName.startsWith(rolePrefix)) {
-                roleName = roleName.substring(rolePrefix.length());
-            }
-
-            if (roleName.equals(Role.ADMIN.toString())) {
-                role = Role.ADMIN;
-                break;  // Admin is the highest authority, no need to continue checking
-            }
-
-            if (roleName.equals(Role.USER.toString())) {
-                role = Role.USER;
-            } else if (roleName.equals(Role.GUEST.toString()) && role != Role.USER) {
-                role = Role.GUEST;
-            }
-        }
-        if (role == null) {
-            LOGGER.error("No role found for the given user's token");
+        } catch (BadRequestServiceEx ex) {
+            LOGGER.error(ex.getMessage());
             return null;
         }
 
@@ -168,14 +214,6 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
             attribute.setName(attributeName);
             attribute.setValue(keycloakUUID);
             attributes.add(attribute);
-
-            Set<UserGroup> groups = new HashSet<>();
-            for (String name : groupNames) {
-                UserGroup group = new UserGroup();
-                group.setGroupName(name);
-                userGroupService.insert(group);
-                groups.add(group);
-            }
 
             User user = new User();
             user.setName(namePrefix + username);
@@ -189,7 +227,6 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
             userService.insert(user);
             return new UsernamePasswordAuthenticationToken(user, "", roleSet);
         } catch (Exception exception) {
-            LOGGER.error("Unable to create user in the database");
             LOGGER.error(exception.getMessage());
             return null;
         }
