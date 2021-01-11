@@ -81,13 +81,13 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
     }
 
     /**
-     * Determine the user's role (admin, user, or guest) from a given list of role names.
+     * Determine the user's highest role (admin, user, or guest) from a given list of role names.
      * If no role matches admin, user, or guest, then returns null.
      *
      * @param roles A List of String role names
      * @return A Role object or null
      */
-    private Role getRole(List<String> roles) {
+    public Role getHighestRole(List<String> roles) {
         Role role = null;
         for (String retrievedRole : roles) {
             String roleName = retrievedRole.toUpperCase();
@@ -116,7 +116,7 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
      * @param groupNames A List of group names to get or create groups with
      * @return A Set of UserGroup objects
      */
-    private Set<UserGroup> getOrCreateGroups(List<String> groupNames) {
+    public Set<UserGroup> getOrCreateGroups(List<String> groupNames) {
         Set<UserGroup> groups = new HashSet<>();
         for (String name : groupNames) {
             try {
@@ -173,7 +173,7 @@ public class KeycloakTokenAuthenticationFilter extends TokenAuthenticationFilter
             return null;
         }
 
-        Role role = getRole(roles);
+        Role role = getHighestRole(roles);
         if (role == null) {
             LOGGER.error("No role found for the given user's token");
             return null;
